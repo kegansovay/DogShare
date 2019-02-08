@@ -6,7 +6,67 @@
   
   <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-core/5.8.34/browser.min.js"></script>
   <script type="text/babel">
+//function to handle our xhr response
+const handleResponse = (xhr) => {
+  const content = document.querySelector("#content");
+  const type = xhr.getResponseHeader('content-type');
+  const h1 = document.createElement('h1');
+  const p = document.createElement('p');
 
+
+  if(type === 'application/json'){
+    ///parse the response text into a JSON object
+    const obj = JSON.parse(xhr.response);
+    h1.textContent = `${obj.id}`;
+    p.textContent = `Message: ${obj.message}`;
+    console.log(obj);
+  }
+  else{
+    const message = xhr.responseXML.querySelector('message').textContent;
+    const id = xhr.responseXML.querySelector('id').textContent;
+    h1.textContent = `id: ${id}`;
+    p.textContent = `message: ${message}`;
+    console.log(xhr.responseXML);
+  }
+
+  content.innerHTML = "";
+	content.appendChild(h1);
+	content.appendChild(p);
+};
+    
+    //function to send ajax
+    const sendAjax = (url, type) => {
+      //create a new xhr (ajax) request. 
+      //Remember that these are ASYNCHRONOUS
+      const xhr = new XMLHttpRequest();
+      //set the xhr to a GET request to a certain URL
+      xhr.open('GET', url);
+      //Set the accept headers to the desired response mime type
+      //Server does NOT have to support this. It is a gentle request.
+      xhr.setRequestHeader ("Accept", type);
+      //When the xhr loads, call handleResponse and pass the xhr object
+      xhr.onload = () => handleResponse(xhr);
+      //send our ajax request to the server
+      xhr.send();
+
+      
+    };
+
+
+    //initialization function
+    const init = () => {
+      const pageSelector = document.querySelector('#page');
+      const typeSelector = document.querySelector('#type');
+      const sendButton = document. querySelector('#send');
+
+
+      const sendData = () => {
+        sendAjax(pageSelector.value, typeSelector.value);    
+      };
+      sendButton.addEventListener('click', sendData);
+
+    };
+    window.onload = init;
   </script>
 </head>
 <body>
