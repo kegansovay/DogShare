@@ -1,125 +1,99 @@
-// function to send a response
-const respond = (request, response, code, content, type) => {
-  if (type[0] === 'text/xml') {
-    response.writeHead(code, { 'Content-Type': 'text/xml' });
-    let responseXML = '<response>';
-    responseXML = `${responseXML} <message>${content.message}</message>`;
-    responseXML = `${responseXML} <id>${content.id}</id>`;
-    responseXML = `${responseXML} </response>`;
-    response.write(responseXML);
-  } else {
-    response.writeHead(code, { 'Content-Type': 'application/json' });
-    response.write(JSON.stringify(content));
+
+class Dog{
+  constructor(name){
+    this.name = name;
   }
+}
+
+// Note this object is purely in memory
+// When node shuts down this will be cleared.
+// Same when your heroku app shuts down from inactivity
+// We will be working with databases in the next few weeks.
+const users = [];
+
+// function to respond with a json object
+// takes request, response, status code and object to send
+const respondJSON = (request, response, status, object) => {
+  response.writeHead(status, { 'Content-Type': 'application/json' });
+  response.write(JSON.stringify(object));
   response.end();
 };
 
-// function to show a success status code
-const success = (request, response, responseType) => {
-  // message to send
-  const responseObj = {
-    message: 'This is a successful response',
-    id: 'Success',
-  };
-  return respond(request, response, 200, responseObj, responseType);
+// function to respond without json body
+// takes request, response and status code
+const respondJSONMeta = (request, response, status) => {
+  response.writeHead(status, { 'Content-Type': 'application/json' });
+  response.end();
 };
 
-
-// function to show a bad request without the correct parameters
-const badRequest = (request, response, params, responseType) => {
-  // message to send
-  const responseObj = {
-    message: 'This request has the required parameters',
-    id: 'badRequest',
+// return user object as JSON
+const getUsers = (request, response) => {
+  const responseJSON = {
+    users,
   };
 
-  // if the request does not contain a valid=true query parameter
-  if (!params.valid || params.valid !== 'true') {
-    // set our error message
-    responseObj.message = 'Missing valid query parameter set to true';
-    // give the error a consistent id
-    responseObj.id = 'badRequest';
+  respondJSON(request, response, 200, responseJSON);
+};
 
-    return respond(request, response, 400, responseObj, responseType);
+// function to add a user from a POST body
+const addUser = (request, response, body) => {
+  // default json message
+  const responseJSON = {
+    message: 'Name and age are both required.',
+  };
+
+  // check to make sure we have both fields
+  // We might want more validation than just checking if they exist
+  // This could easily be abused with invalid types (such as booleans, numbers, etc)
+  // If either are missing, send back an error message as a 400 badRequest
+  //!body.name || !body.age
+  if (!body.name) {
+    responseJSON.id = 'missingParams';
+    return respondJSON(request, response, 400, responseJSON);
   }
 
-  return respond(request, response, 400, responseObj, responseType);
-};
+  let newDog = new Dog(body.name);
+  
 
+  // default status code to 201 created
+  let responseCode = 201;
 
-// function to show a unauthorized without the correct parameters
-const unauthorized = (request, response, params, responseType) => {
-  // if the request does not contain a valid=true query parameter
-  if (!params.loggedIn || params.loggedIn !== 'yes') {
-    const responseObj = {
-      message: 'Missing loggedIn query parameter set to yes.',
-      id: 'unauthorized',
-    };
-
-    return respond(request, response, 200, responseObj, responseType);
+  // if that user's name already exists in our object
+  // then switch to a 204 updated status
+  if (users[body.name]) {
+    responseCode = 204;
+  } else {
+    // otherwise create an object with that name
+    users.push(newDog);
   }
 
-  const responseObj = {
-    message: 'You have access to view this page.',
-    id: 'authorized',
-  };
-  return respond(request, response, 401, responseObj, responseType);
+  // add or update fields for this user name
+  //users[body.name].name = body.name;
+  //users[body.name].age = body.age;
+
+  // if response is created, then set our created message
+  // and sent response with a message
+  if (responseCode === 201) {
+    responseJSON.message = 'Created Successfully';
+    return respondJSON(request, response, responseCode, responseJSON);
+  }
+  // 204 has an empty payload, just a success
+  // It cannot have a body, so we just send a 204 without a message
+  // 204 will not alter the browser in any way!!!
+  return respondJSONMeta(request, response, responseCode);
 };
 
 
-// function to show forbidden error
-const forbidden = (request, response, responseType) => {
-  // error message with a description and consistent error id
-  const responseObj = {
-    message: 'You do not have access to this content.',
-    id: 'forbidden',
+const notFound = (request, repsonse) => {
+  const message = {
+    message: 'The page you were looking for was not found',
   };
-
-  return respond(request, response, 403, responseObj, responseType);
+  return respondJSON(request, repsonse, 404, message);
 };
 
-
-// function to show internal error
-const internal = (request, response, responseType) => {
-  // error message with a description and consistent error id
-  const responseObj = {
-    message: 'Internal Server Error. Something went wrong.',
-    id: 'internalError',
-  };
-
-  return respond(request, response, 500, responseObj, responseType);
-};
-
-
-// function to show internal error
-const notImplemented = (request, response, responseType) => {
-  // error message with a description and consistent error id
-  const responseObj = {
-    message: 'A get request for this page has not been implemented yet. Check again later for updated content.',
-    id: 'notImplemented',
-  };
-
-  return respond(request, response, 501, responseObj, responseType);
-};
-
-
-const notFound = (request, response, responseType) => {
-  const responseObj = {
-    message: 'The page you are looking for was not found.',
-    id: 'notFound',
-  };
-  return respond(request, response, 404, responseObj, responseType);
-};
-
-// exports to set functions to public.
-// In this syntax, you can do getIndex:getIndex, but if they
-// are the same name, you can short handle to just getIndex,
+// public exports
 module.exports = {
-  success,
-  badRequest,
-  unauthorized,
-  forbidden,
-  internal,
-  notImplemented,
+  getUsers,
+  addUser,
   notFound,
 };
