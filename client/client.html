@@ -22,6 +22,7 @@
         //if users in response, add to screen
         if(obj.users) {
           let cards = document.getElementById('cards');
+          cards.innerHTML = "";
           for(let i=0; i< obj.users.length; i++){
             let name = obj.users[i].name;
             let cardInfo = `<div class="card d-inline-block" style="width: 48rem;">
