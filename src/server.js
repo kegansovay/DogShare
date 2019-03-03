@@ -3,6 +3,7 @@ const url = require('url');
 const query = require('querystring');
 const htmlHandler = require('./htmlResponses.js');
 const jsonHandler = require('./jsonResponses.js');
+const mediaHandler = require('./mediaResponses.js');
 
 
 const port = process.env.PORT || process.env.NODE_PORT || 3000;
@@ -12,6 +13,7 @@ const urlStruct = {
   '/style.css': htmlHandler.getCSS,
   '/getUsers': jsonHandler.getUsers,
   '/notReal': jsonHandler.notFound,
+  '/dogshare.png': mediaHandler.getImage,
   getUsersMeta: jsonHandler.getUsersMeta,
   index: htmlHandler.getIndex,
   notFound: jsonHandler.notFound,

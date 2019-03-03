@@ -1,15 +1,24 @@
-
+//class object for the dog
 class Dog{
-  constructor(name){
+  constructor(name, imgSrc, description){
     this.name = name;
+    this.imgSrc = imgSrc;
+    this.description = description;
   }
 }
+
+//example data
+const testDog1 = new Dog("Scout", "https://hips.hearstapps.com/ghk.h-cdn.co/assets/17/30/1500922382-brittany-spaniel.jpg", "Scout is the best doggo");
+const testDog2 = new Dog("Waylon", "https://ybxzcgnc7b-flywheel.netdna-ssl.com/wp-content/uploads/2016/12/yellow-english-lab.jpg", "Waylon is a fun and energetic English Lab who enjoys playing fetch.")
 
 // Note this object is purely in memory
 // When node shuts down this will be cleared.
 // Same when your heroku app shuts down from inactivity
 // We will be working with databases in the next few weeks.
 const users = [];
+users.push(testDog1);
+users.push(testDog2);
+
 
 // function to respond with a json object
 // takes request, response, status code and object to send
@@ -39,20 +48,21 @@ const getUsers = (request, response) => {
 const addUser = (request, response, body) => {
   // default json message
   const responseJSON = {
-    message: 'Name and age are both required.',
+    message: 'Name, and image are both required.',
   };
-
+  //console.log(body);
   // check to make sure we have both fields
   // We might want more validation than just checking if they exist
   // This could easily be abused with invalid types (such as booleans, numbers, etc)
   // If either are missing, send back an error message as a 400 badRequest
   //!body.name || !body.age
-  if (!body.name) {
+  if (!body.name || !body.imgSrc ) {
+    
     responseJSON.id = 'missingParams';
     return respondJSON(request, response, 400, responseJSON);
   }
 
-  let newDog = new Dog(body.name);
+  let newDog = new Dog(body.name, body.imgSrc, body.description);
   
 
   // default status code to 201 created
@@ -60,7 +70,16 @@ const addUser = (request, response, body) => {
 
   // if that user's name already exists in our object
   // then switch to a 204 updated status
-  if (users[body.name]) {
+  let duplicateDog = false;
+  for(let x=0; x<users.length; x++){
+    
+    if (users[x].name === body.name && users[x].imgSrc === body.imgSrc){
+      duplicateDog = true;
+      //responseCode = 204;
+    }
+  }
+
+  if (duplicateDog) {
     responseCode = 204;
   } else {
     // otherwise create an object with that name
